@@ -41,7 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Get statement marker(s) for that language
         // If statement marker(s) is not listed for that language, use the default markers
         let statementMarkers: string[];
-        statementMarkers = _statementTerminatorMap.get(languageId) ?? [';'];  // TODO: Consider removing the default to avoid interfering with languages that don't use ';'
+        statementMarkers = _statementTerminatorMap.get(languageId) ?? [','];
 
         // Process each selection/cursor
         const newSelections: vscode.Selection[] = [];
