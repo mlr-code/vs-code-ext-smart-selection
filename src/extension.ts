@@ -129,14 +129,52 @@ export function activate(context: vscode.ExtensionContext) {
             // Select value (after = and before ; or line comment)
             console.log("valueStart (final) = " + valueStart);
             console.log("valueEnd (final) = " + valueEnd);
-            const valueRange = new vscode.Range(
+            let finalValueStart = valueStart;
+            let finalValueEnd = valueEnd;
+
+            // Check if the value is a single string
+            const valueText = lineText.substring(valueStart, valueEnd);
+            let stringMarkers: string[] = _stringMap.get(languageId) ?? ['"', "'"];
+            let isSingleString = false;
+            let quoteChar = '';
+            for (const quote of stringMarkers) {
+                if (valueText.startsWith(quote) && valueText.endsWith(quote) && valueText.length >= 2) {
+                    const inner = valueText.substring(1, valueText.length - 1);
+                    if (!inner.includes(quote)) {
+                        isSingleString = true;
+                        quoteChar = quote;
+                        break;
+                    }
+                }
+            }
+
+            if (isSingleString) {
+                const withoutQuotesStart = valueStart + 1;
+                const withoutQuotesEnd = valueEnd - 1;
+                // Check if current selection is exactly the without quotes range
+                const isCurrentlyWithoutQuotes = selection.start.line === selection.end.line &&
+                    selection.start.line === selection.active.line &&
+                    selection.start.character === withoutQuotesStart &&
+                    selection.end.character === withoutQuotesEnd;
+                if (isCurrentlyWithoutQuotes) {
+                    // Second run: include quotes
+                    finalValueStart = valueStart;
+                    finalValueEnd = valueEnd;
+                } else {
+                    // First run: exclude quotes
+                    finalValueStart = withoutQuotesStart;
+                    finalValueEnd = withoutQuotesEnd;
+                }
+            }
+
+            const finalValueRange = new vscode.Range(
                 selection.active.line,
-                valueStart,
+                finalValueStart,
                 selection.active.line,
-                valueEnd
+                finalValueEnd
             );
 
-            newSelections.push(new vscode.Selection(valueRange.start, valueRange.end));
+            newSelections.push(new vscode.Selection(finalValueRange.start, finalValueRange.end));
         }
 
         // Apply all new selections
@@ -236,9 +274,9 @@ const _stringMap = new Map<string, string[]>([
     ["ahk"        , [      '"']],
     ["asm"        , ["'" , '"']],
     ["bat"        , [      '"']],
-    ["c"          , [      '"']],
-    ["cpp"        , [      '"']],
-    ["csharp"     , [      '"']],
+    ["c"          , ["'" , '"']],
+    ["cpp"        , ["'" , '"']],
+    ["csharp"     , ["'" , '"']],
     ["css"        , ["'" , '"']],
     ["go"         , [      '"']],
     ["html"       , ["'" , '"']],

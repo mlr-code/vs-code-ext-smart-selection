@@ -12,6 +12,7 @@ Currently the extension offers a single feature, with additional ones planned fo
 - If the line has an inline comment, skips the trailing spaces.
 - If the line has a statement terminator, ignores it.
 - Takes ',' into account to determine the end of the value position.
+- Detects when the assignment value is a single string. If so, toggles between including or excluding quotes.
 
 ## ✨ Features
 
