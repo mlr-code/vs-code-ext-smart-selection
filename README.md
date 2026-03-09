@@ -1,37 +1,41 @@
 # Smart Selection
 
-Smart Selection is a Visual Studio Code extension that uses shortcut keys to do smart code selections.
+Smart Selection is a Visual Studio Code extension that uses keyboard shortcuts to perform smart code selections.
 
-**ALT + = Selects value after equals** select the variable attribution value.
+Currently the extension offers a single feature, with additional ones planned for future releases.
 
-- Skips 1 leading space after =.
-- If line has inline comment, skips the trailing spaces.
-- If line has statement terminator, ignore it.
-- Take ',' into account to fetermine the end of the value position.
+## 📖 Usage
+
+**ALT + = Selects value after equals** selects the variable assignment value.
+
+- Skips one leading space after =.
+- If the line has an inline comment, skips the trailing spaces.
+- If the line has a statement terminator, ignores it.
+- Takes ',' into account to determine the end of the value position.
 
 ## ✨ Features
 
-- Detects the current file’s language and use the appropriate inline comment markers (e.g., `//`, `#`, `--`) and string markers.
-- Detects if the equal and comment marker are inside a string and ignores it.
+- Detects the current file's language and uses the appropriate inline comment markers (e.g., `//`, `#`, `--`) and string markers.
+- Detects if the equals sign and comment marker are inside a string and ignores them.
 - Works with multiple line selections.
 - Works with multiple cursors.
 - Lightweight and fast — no configuration required.
 
-## Limitations
+## ⚠️ Limitations
 
-Detects only trivial variable attributions.
+Detects only trivial variable assignments.
 
-More complex detection is under work.
+More complex detection is under development.
 
-## Build from source
+## 🔨 Build from source
 
 - Install [Node.js](https://nodejs.org/en/download)
 - Clone [repository](https://github.com/mlr-code/vs-code-ext-smart-selection) from GitHub
-- At repository dir run:
+- In the repository directory, run:
   ```bash
   npm install
   npm run compile
   npm install -g @vscode/vsce
   vsce package
   ```
-- Install .vsix file directly in VS Code via `Extensions: Install from VSIX...` in command palette
+- Install the .vsix file directly in VS Code via `Extensions: Install from VSIX...` in the command palette
