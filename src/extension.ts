@@ -12,8 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const document = editor.document;
-        const selection = editor.selection;
-        const lineText = document.lineAt(selection.active.line).text;
+        const selections = editor.selections;
 
         // Detect the document language (e.g., JavaScript or C#)
         let languageId = editor.document.languageId;
@@ -28,94 +27,106 @@ export function activate(context: vscode.ExtensionContext) {
         let statementMarkers: string[];
         statementMarkers = _statementTerminatorMap.get(languageId) ?? [';'];  // TODO: Consider removing the default to avoid interfering with languages that don't use ';'
 
-        // 1. Find the '=' sign position
-        const posEquals = findMarker(lineText, languageId, ["="], 0, lineText.length);
-        console.log("");
-        console.log(lineText);
-        console.log("lineText.length = " + lineText.length);
-        console.log("posEquals = " + posEquals);
-        if (posEquals === -1) {
-            return;
-        }
-        let valueStart = posEquals + 1;
-        console.log("valueStart (after equals) = " + valueStart);
+        // Process each selection/cursor
+        const newSelections: vscode.Selection[] = [];
 
-        // 2. Find the end of the value position
-        // If line has comments, end-of-value goes before it (ideally 2 spaces before comment marker)
-        // If line has statement terminator, end-of-value goes before it
+        for (const selection of selections) {
+            const lineText = document.lineAt(selection.active.line).text;
 
-        // 2.1 Check if line contains comments
-        let valueEnd = lineText.length;
-        console.log("valueEnd (final da linha) = " + valueEnd);
-		
-        let posComment = findMarker(lineText, languageId, commentMarkers, posEquals, lineText.length);
-        console.log("posComment = " + posComment);
-
-        let posEndOfCode = posComment === -1 ? valueEnd : posComment;
-        console.log("posEndOfCode = " + posEndOfCode);
-
-        // 2.2 If there is no value after =
-        if (isOnlySpaces(lineText.substring(posEquals+1, posEndOfCode))) {
-            if (posEquals+2 <= posEndOfCode) {
-                valueStart = posEquals+2;
-                console.log("valueStart (empty value) = " + posEndOfCode);
+            // 1. Find the '=' sign position
+            const posEquals = findMarker(lineText, languageId, ["="], 0, lineText.length);
+            console.log("");
+            console.log(lineText);
+            console.log("lineText.length = " + lineText.length);
+            console.log("posEquals = " + posEquals);
+            if (posEquals === -1) {
+                continue;
             }
+            let valueStart = posEquals + 1;
+            console.log("valueStart (after equals) = " + valueStart);
+
+            // 2. Find the end of the value position
+            // If line has comments, end-of-value goes before it (ideally 2 spaces before comment marker)
+            // If line has statement terminator, end-of-value goes before it
+
+            // 2.1 Check if line contains comments
+            let valueEnd = lineText.length;
+            console.log("valueEnd (final da linha) = " + valueEnd);
             
-            // 2.2.1 If there is no comment, valueEnd will go until the end of line
-            if (posComment === -1) {
-                valueEnd = lineText.length;
-                console.log("valueEnd (empty value - no comment) = " + valueEnd);
+            let posComment = findMarker(lineText, languageId, commentMarkers, posEquals, lineText.length);
+            console.log("posComment = " + posComment);
+
+            let posEndOfCode = posComment === -1 ? valueEnd : posComment;
+            console.log("posEndOfCode = " + posEndOfCode);
+
+            // 2.2 If there is no value after =
+            if (isOnlySpaces(lineText.substring(posEquals+1, posEndOfCode))) {
+                if (posEquals+2 <= posEndOfCode) {
+                    valueStart = posEquals+2;
+                    console.log("valueStart (empty value) = " + posEndOfCode);
+                }
+                
+                // 2.2.1 If there is no comment, valueEnd will go until the end of line
+                if (posComment === -1) {
+                    valueEnd = lineText.length;
+                    console.log("valueEnd (empty value - no comment) = " + valueEnd);
+                }
+                // 2.2.2 If there is a comment, ideally position valueEnd 2 spaces before it, but if valueEnd ends up before valueStart, set valueEnd = valueStart
+                else {
+                    valueEnd = posEndOfCode;
+                    if (posEndOfCode-2 >= posEquals+1) {
+                        valueEnd = posEndOfCode - 2;
+                    }
+                    if (valueEnd < valueStart) {
+                        valueEnd = valueStart;
+                    }
+                    console.log("valueEnd (empty value - before comment) = " + valueEnd);
+                }
             }
-            // 2.2.2 If there is a comment, ideally position valueEnd 2 spaces before it, but if valueEnd ends up before valueStart, set valueEnd = valueStart
+            // 2.3 Has value after =
             else {
-                valueEnd = posEndOfCode;
-                if (posEndOfCode-2 >= posEquals+1) {
-                    valueEnd = posEndOfCode - 2;
+                // Skip 1 leading space after =
+                if (lineText.charAt(valueStart) === ' ') {
+                    valueStart++;
+                    console.log("valueStart (trim 1 leading space) = " + valueStart);
                 }
-                if (valueEnd < valueStart) {
-                    valueEnd = valueStart;
+
+                // 2.3.1 Inline comments
+                if (posComment !== -1) {
+                    valueEnd = posComment - 1;
+                    // Don't select trailing spaces when comment exists
+                    while (valueEnd > posEquals  && /\s/.test(lineText.charAt(valueEnd - 1))) {
+                        valueEnd--;
+                    }
+                    console.log("valueEnd (antes do comentário) = " + valueEnd);
                 }
-                console.log("valueEnd (empty value - before comment) = " + valueEnd);
+
+                // 2.3.2 If the line ends with ';', stop before it
+                let posStatementTerminator = findMarker(lineText, languageId, statementMarkers, posEquals, lineText.length);
+                console.log("posStatementTerminator = " + posStatementTerminator);
+                if (posStatementTerminator !== -1) {
+                    valueEnd = posStatementTerminator;
+                    console.log("valueEnd (antes do stat termin) = " + valueEnd);
+                }
             }
+
+            // Select value (after = and before ; or line comment)
+            console.log("valueStart (final) = " + valueStart);
+            console.log("valueEnd (final) = " + valueEnd);
+            const valueRange = new vscode.Range(
+                selection.active.line,
+                valueStart,
+                selection.active.line,
+                valueEnd
+            );
+
+            newSelections.push(new vscode.Selection(valueRange.start, valueRange.end));
         }
-        // 2.3 Has value after =
-        else {
-            // Skip 1 leading space after =
-            if (lineText.charAt(valueStart) === ' ') {
-                valueStart++;
-                console.log("valueStart (trim 1 leading space) = " + valueStart);
-            }
 
-            // 2.3.1 Inline comments
-            if (posComment !== -1) {
-                valueEnd = posComment - 1;
-                // Don't select trailing spaces when comment exists
-                while (valueEnd > posEquals  && /\s/.test(lineText.charAt(valueEnd - 1))) {
-                    valueEnd--;
-                }
-                console.log("valueEnd (antes do comentário) = " + valueEnd);
-            }
-
-            // 2.3.2 If the line ends with ';', stop before it
-            let posStatementTerminator = findMarker(lineText, languageId, statementMarkers, posEquals, lineText.length);
-            console.log("posStatementTerminator = " + posStatementTerminator);
-            if (posStatementTerminator !== -1) {
-                valueEnd = posStatementTerminator;
-                console.log("valueEnd (antes do stat termin) = " + valueEnd);
-            }
+        // Apply all new selections
+        if (newSelections.length > 0) {
+            editor.selections = newSelections;
         }
-
-        // Select value (after = and before ; or line comment)
-        console.log("valueStart (final) = " + valueStart);
-        console.log("valueEnd (final) = " + valueEnd);
-        const valueRange = new vscode.Range(
-            selection.active.line,
-            valueStart,
-            selection.active.line,
-            valueEnd
-        );
-
-        editor.selection = new vscode.Selection(valueRange.start, valueRange.end);
     });
 
     context.subscriptions.push(disposable);
