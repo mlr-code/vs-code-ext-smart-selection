@@ -5,7 +5,7 @@ Smart Selection is a Visual Studio Code extension that uses shortcut keys to do 
 **ALT + = Selects value after equals** select the variable attribution value.
 
 - Skips 1 leading space after =.
-- If line has inline comment, skips the traiking spaces.
+- If line has inline comment, skips the trailing spaces.
 - If line has statement terminator, ignore it.
 - Take ',' into account to fetermine the end of the value position.
 
@@ -13,7 +13,8 @@ Smart Selection is a Visual Studio Code extension that uses shortcut keys to do 
 
 - Detects the current file’s language and use the appropriate inline comment markers (e.g., `//`, `#`, `--`) and string markers.
 - Detects if the equal and comment marker are inside a string and ignores it.
-- (WIP) Works with multiple cursors/selections.
+- Works with multiple line selections.
+- Works with multiple cursors.
 - Lightweight and fast — no configuration required.
 
 ## Limitations

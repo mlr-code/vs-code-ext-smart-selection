@@ -14,6 +14,22 @@ export function activate(context: vscode.ExtensionContext) {
         const document = editor.document;
         const selections = editor.selections;
 
+        // Build effective selections: split multiline into single lines
+        const effectiveSelections: vscode.Selection[] = [];
+        for (const selection of selections) {
+            if (selection.start.line === selection.end.line) {
+                // Single line selection
+                effectiveSelections.push(selection);
+            } else {
+                // Multiline selection: create one selection per line
+                for (let line = selection.start.line; line <= selection.end.line; line++) {
+                    // Create a selection with active at the start of the line
+                    const pos = new vscode.Position(line, 0);
+                    effectiveSelections.push(new vscode.Selection(pos, pos));
+                }
+            }
+        }
+
         // Detect the document language (e.g., JavaScript or C#)
         let languageId = editor.document.languageId;
 
@@ -30,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Process each selection/cursor
         const newSelections: vscode.Selection[] = [];
 
-        for (const selection of selections) {
+        for (const selection of effectiveSelections) {
             const lineText = document.lineAt(selection.active.line).text;
 
             // 1. Find the '=' sign position
