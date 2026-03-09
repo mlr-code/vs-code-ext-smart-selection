@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
         const selection = editor.selection;
         const lineText = document.lineAt(selection.active.line).text;
 
-        // Detect document language (like js or csharp etc)
+        // Detect the document language (e.g., JavaScript or C#)
         let languageId = editor.document.languageId;
 
         // Get comment marker(s) for that language
@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Get statement marker(s) for that language
         // If statement marker(s) is not listed for that language, use the default markers
         let statementMarkers: string[];
-        statementMarkers = _statementTerminatorMap.get(languageId) ?? [';'];  // TODO acho que é melhor tirar o default para não interferir em linguagens que não tem ;
+        statementMarkers = _statementTerminatorMap.get(languageId) ?? [';'];  // TODO: Consider removing the default to avoid interfering with languages that don't use ';'
 
         // 1. Find the '=' sign position
         const posEquals = findMarker(lineText, languageId, ["="], 0, lineText.length);
@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
         let posEndOfCode = posComment === -1 ? valueEnd : posComment;
         console.log("posEndOfCode = " + posEndOfCode);
 
-        // 2.2 If there is no values after =
+        // 2.2 If there is no value after =
         if (isOnlySpaces(lineText.substring(posEquals+1, posEndOfCode))) {
             if (posEquals+2 <= posEndOfCode) {
                 valueStart = posEquals+2;
@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
                 valueEnd = lineText.length;
                 console.log("valueEnd (empty value - no comment) = " + valueEnd);
             }
-            // 2.2.2 If there is comment, ideally try to position valueEnd 2 spaces before, but if valueEnd end up before valueStart, make valueEnd = valueStart
+            // 2.2.2 If there is a comment, ideally position valueEnd 2 spaces before it, but if valueEnd ends up before valueStart, set valueEnd = valueStart
             else {
                 valueEnd = posEndOfCode;
                 if (posEndOfCode-2 >= posEquals+1) {
@@ -96,7 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
                 console.log("valueEnd (antes do comentário) = " + valueEnd);
             }
 
-            // 2.3.2 If line ends with ; stops before it
+            // 2.3.2 If the line ends with ';', stop before it
             let posStatementTerminator = findMarker(lineText, languageId, statementMarkers, posEquals, lineText.length);
             console.log("posStatementTerminator = " + posStatementTerminator);
             if (posStatementTerminator !== -1) {
@@ -174,7 +174,7 @@ function findMarker(
 }
 
 
-// See the list of known VS Code langugage identifiers at https://code.visualstudio.com/docs/languages/identifiers
+// See the list of known VS Code language identifiers at https://code.visualstudio.com/docs/languages/identifiers
 const _commentMap = new Map<string, string[]>([
     ["advpl"      , ["//"  , "/*"     ]],
     ["ahk"        , [";"              ]],
