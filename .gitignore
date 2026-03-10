@@ -1,5 +1,9 @@
 dist/
 node_modules/
+
+/.vscode-test/
+/out/
 /.vscode-test.mjs
 /.vscodeignore
+
 **/*.vsix
